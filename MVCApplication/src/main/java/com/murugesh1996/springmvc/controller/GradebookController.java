@@ -38,7 +38,7 @@ public class GradebookController {
 
     @PostMapping("/")
     public String createStudent(@ModelAttribute("student") CollegeStudent student, Model m){
-        studentService.createStudent(student.getFirstname(), student.getLastname(), student.getEmailAddress());
+        studentService.createStudent(student.getId(), student.getFirstname(), student.getLastname(), student.getEmailAddress());
         Iterable<CollegeStudent> collegeStudents = studentService.getGradebook();
         m.addAttribute("students", collegeStudents);
         return "index";
@@ -46,7 +46,7 @@ public class GradebookController {
 
     @GetMapping("/delete/student/{id}")
     public String deleteStudent(@PathVariable int id, Model m) {
-        if(!studentService.checkIfStudentIsNull(id))
+        if(!studentService.checkIfStudentIsPresent(id))
             return "error";
         studentService.deleteStudent(id);
         Iterable<CollegeStudent> collegeStudents = studentService.getGradebook();

@@ -8,4 +8,6 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ScienceGradeDAO extends JpaRepository<ScienceGrade, Integer> {
     public Iterable<ScienceGrade> findGradeByStudentId(int id);
+
+    public void deleteByStudentId(int id);
 }

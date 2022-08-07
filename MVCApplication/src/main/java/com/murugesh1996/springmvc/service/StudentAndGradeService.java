@@ -1,9 +1,6 @@
 package com.murugesh1996.springmvc.service;
 
-import com.murugesh1996.springmvc.models.CollegeStudent;
-import com.murugesh1996.springmvc.models.HistoryGrade;
-import com.murugesh1996.springmvc.models.MathGrade;
-import com.murugesh1996.springmvc.models.ScienceGrade;
+import com.murugesh1996.springmvc.models.*;
 import com.murugesh1996.springmvc.repository.HistoryGradeDAO;
 import com.murugesh1996.springmvc.repository.MathGradeDAO;
 import com.murugesh1996.springmvc.repository.ScienceGradeDAO;
@@ -13,6 +10,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 
@@ -44,22 +44,61 @@ public class StudentAndGradeService {
     @Autowired
     HistoryGradeDAO historyGradeDAO;
 
-    public void createStudent(String firstName, String lastName, String email){
+    public void createStudent(int id, String firstName, String lastName, String email){
         CollegeStudent collegeStudent = new CollegeStudent( firstName,  lastName,  email);
-        collegeStudent.setId(0);
+        collegeStudent.setId(id);
         studentDAO.save(collegeStudent);
     }
 
-    public boolean checkIfStudentIsNull(int id) {
+    public boolean checkIfStudentIsPresent(int id) {
         Optional<CollegeStudent> student = studentDAO.findById(id);
         if(student.isPresent())
             return true;
         return false;
     }
 
+    public boolean checkIfGradeIsPresent(int id, String gradeType) {
+
+        if(gradeType.equals("math")){
+            if(mathGradeDAO.findById(id).isPresent())
+                return true;
+        }else if(gradeType.equals("science")){
+            if(scienceGradeDAO.findById(id).isPresent())
+                return true;
+        }else if(gradeType.equals("history")){
+            if(historyGradeDAO.findById(id).isPresent())
+                return true;
+        }
+
+        return false;
+    }
+
     public void deleteStudent(int id) {
-        if (checkIfStudentIsNull(id))
+        if (checkIfStudentIsPresent(id))
             studentDAO.deleteById(id);
+        if(checkIfGradeIsPresentByStudentId(id, "math")){
+            mathGradeDAO.deleteByStudentId(id);
+        }
+        if(checkIfGradeIsPresent(id, "science")){
+            scienceGradeDAO.deleteByStudentId(id);
+        }
+        if(checkIfGradeIsPresent(id, "history")){
+            historyGradeDAO.deleteByStudentId(id);
+        }
+    }
+
+    private boolean checkIfGradeIsPresentByStudentId(int id, String gradeType) {
+        if(gradeType.equals("math")){
+            if(mathGradeDAO.findGradeByStudentId(id).iterator().hasNext())
+                return true;
+        }else if(gradeType.equals("science")){
+            if(scienceGradeDAO.findGradeByStudentId(id).iterator().hasNext())
+                return true;
+        }else if(gradeType.equals("history")){
+            if(historyGradeDAO.findGradeByStudentId(id).iterator().hasNext())
+                return true;
+        }
+        return false;
     }
 
     public Iterable<CollegeStudent> getGradebook() {
@@ -67,7 +106,7 @@ public class StudentAndGradeService {
     }
 
     public boolean createGrade(double grade, int id, String gradeType) {
-        if(!checkIfStudentIsNull(id))
+        if(!checkIfStudentIsPresent(id))
             return false;
         if(grade>0 && grade<100)
             if(gradeType.equals("math")){
@@ -90,5 +129,58 @@ public class StudentAndGradeService {
                 return true;
             }
         return false;
+    }
+
+    public boolean deleteGrade(int id, String gradeType) {
+        if(!checkIfGradeIsPresent(id, gradeType))
+            return false;
+        if(gradeType.equals("math")){
+            mathGradeDAO.deleteById(id);
+            return true;
+        }else if(gradeType.equals("science")){
+            scienceGradeDAO.deleteById(id);
+            return true;
+        }else if(gradeType.equals("history")){
+            historyGradeDAO.deleteById(id);
+            return true;
+        }
+
+        return false;
+    }
+
+    public GradebookCollegeStudent studentInformation(int id) {
+        CollegeStudent  collegeStudent= new CollegeStudent();
+        List<Grade> mathGradeList = new ArrayList<>();
+        List<Grade> scienceGradeList = new ArrayList<>();
+        List<Grade> historyGradeList = new ArrayList<>();
+        StudentGrades studentGrades = new StudentGrades();
+
+        if(checkIfStudentIsPresent(id)){
+            collegeStudent = studentDAO.findById(id).get();
+        }else {
+            return null;
+        }
+        if(checkIfGradeIsPresentByStudentId(id,"math")){
+            mathGradeDAO.findGradeByStudentId(id).forEach(mathGradeList::add);
+        }
+        if(checkIfGradeIsPresentByStudentId(id,"science")){
+            scienceGradeDAO.findGradeByStudentId(id).forEach(scienceGradeList::add);
+        }
+        if(checkIfGradeIsPresentByStudentId(id,"history")){
+            historyGradeDAO.findGradeByStudentId(id).forEach(historyGradeList::add);
+        }
+
+        studentGrades.setMathGradeResults(mathGradeList);
+        studentGrades.setScienceGradeResults(scienceGradeList);
+        studentGrades.setHistoryGradeResults(historyGradeList);
+
+        GradebookCollegeStudent gradebookCollegeStudent = new GradebookCollegeStudent(
+                collegeStudent.getId(),
+                collegeStudent.getFirstname(),
+                collegeStudent.getLastname(),
+                collegeStudent.getEmailAddress(),
+                studentGrades);
+
+        return gradebookCollegeStudent;
     }
 }

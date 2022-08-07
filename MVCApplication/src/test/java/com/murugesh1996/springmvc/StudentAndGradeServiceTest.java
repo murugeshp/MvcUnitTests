@@ -1,9 +1,6 @@
 package com.murugesh1996.springmvc;
 
-import com.murugesh1996.springmvc.models.CollegeStudent;
-import com.murugesh1996.springmvc.models.HistoryGrade;
-import com.murugesh1996.springmvc.models.MathGrade;
-import com.murugesh1996.springmvc.models.ScienceGrade;
+import com.murugesh1996.springmvc.models.*;
 import com.murugesh1996.springmvc.repository.HistoryGradeDAO;
 import com.murugesh1996.springmvc.repository.MathGradeDAO;
 import com.murugesh1996.springmvc.repository.ScienceGradeDAO;
@@ -19,8 +16,8 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.jdbc.Sql;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,22 +64,30 @@ public class StudentAndGradeServiceTest {
 
     @Test
     public void createStudentService(){
-        studentService.createStudent("Murugesh", "palansiamy", "murugesh1996@gmail.com");
+        studentService.createStudent(1,"Murugesh", "palansiamy", "murugesh1996@gmail.com");
         CollegeStudent collegeStudent = studentDAO.findByEmailAddress("murugesh1996@gmail.com");
         assertEquals("murugesh1996@gmail.com", collegeStudent.getEmailAddress());
     }
 
     @Test
     public void isStudentNullCheck(){
-        assertTrue(studentService.checkIfStudentIsNull(1));
-        assertFalse(studentService.checkIfStudentIsNull(0));
+        assertTrue(studentService.checkIfStudentIsPresent(1));
+        assertFalse(studentService.checkIfStudentIsPresent(0));
     }
 
     @Test
     public void deleteStudentService(){
         assertTrue(studentDAO.findById(1).isPresent(),"Student is present");
+        assertTrue(mathGradeDAO.findById(1).isPresent(),"Math grade is deleted");
+        assertTrue(scienceGradeDAO.findById(1).isPresent(),"Science grade is deleted");
+        assertTrue(historyGradeDAO.findById(1).isPresent(),"History grade is deleted");
+
         studentService.deleteStudent(1);
+
         assertFalse(studentDAO.findById(1).isPresent(),"Student is deleted");
+        assertFalse(mathGradeDAO.findById(1).isPresent(),"Math is deleted");
+        assertFalse(scienceGradeDAO.findById(1).isPresent(),"Science is deleted");
+        assertFalse(historyGradeDAO.findById(1).isPresent(),"History is deleted");
     }
 
     @Sql("/insertData.sql")
@@ -104,9 +109,9 @@ public class StudentAndGradeServiceTest {
         Iterable<MathGrade> mathGrades = mathGradeDAO.findGradeByStudentId(1);
         Iterable<ScienceGrade> scienceGrades = scienceGradeDAO.findGradeByStudentId(1);
         Iterable<HistoryGrade> historyGrades = historyGradeDAO.findGradeByStudentId(1);
-        assertTrue(mathGrades.iterator().hasNext(), "Student has math grade");
-        assertTrue(scienceGrades.iterator().hasNext(), "Student has science grade");
-        assertTrue(historyGrades.iterator().hasNext(), "Student has history grade");
+        assertTrue(((Collection<MathGrade>) mathGrades).size() == 2, "Student has math grade");
+        assertTrue(((Collection<HistoryGrade>) historyGrades).size() == 2, "Student has math grade");
+        assertTrue(((Collection<ScienceGrade>) scienceGrades).size() == 2, "Student has math grade");
     }
 
     @Test
@@ -115,6 +120,41 @@ public class StudentAndGradeServiceTest {
         assertFalse(studentService.createGrade(80.50, 2, "math"));
         assertFalse(studentService.createGrade(-80.50, 1, "math"));
         assertFalse(studentService.createGrade(95.00, 1, "social"));
+    }
+
+    @Test
+    public void deleteGradeService(){
+        assertTrue(studentService.deleteGrade(1, "math"));
+       assertTrue(studentService.deleteGrade(1, "science"));
+        assertTrue(studentService.deleteGrade(1, "history"));
+        assertFalse(mathGradeDAO.findById(1).isPresent(), "Student math grade deleted");
+        assertFalse(scienceGradeDAO.findById(1).isPresent(), "Student science  grade deleted");
+        assertFalse(historyGradeDAO.findById(1).isPresent(), "Student history grade deleted");
+    }
+
+    @Test
+    public void deleteGradeServiceReturnFalse(){
+        assertFalse(studentService.deleteGrade(5, "math"));
+        assertFalse(studentService.deleteGrade(1, "social"));
+    }
+
+    @Test
+    public void studentInformation(){
+        GradebookCollegeStudent gradebookCollegeStudent = studentService.studentInformation(1);
+        assertNotNull(gradebookCollegeStudent);
+        assertEquals(1, gradebookCollegeStudent.getId());
+        assertEquals("Murugesh", gradebookCollegeStudent.getFirstname());
+        assertEquals("Palanisamy", gradebookCollegeStudent.getLastname());
+        assertEquals("Murugesh1996@gmail.com", gradebookCollegeStudent.getEmailAddress());
+        assertTrue(gradebookCollegeStudent.getStudentGrades().getMathGradeResults().size() == 1);
+        assertTrue(gradebookCollegeStudent.getStudentGrades().getScienceGradeResults().size() == 1);
+        assertTrue(gradebookCollegeStudent.getStudentGrades().getHistoryGradeResults().size() == 1);
+    }
+
+    @Test
+    public void studentInformationServiceReturnNull(){
+        GradebookCollegeStudent gradebookCollegeStudent = studentService.studentInformation(0);
+        assertNull(gradebookCollegeStudent);
     }
 
 }
