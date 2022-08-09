@@ -1,2 +1,0 @@
-insert into student(id, firstname, lastname, email_address) values (2, 'Shivani', 'Murugesh', 'Shivani@gmail.com');
-insert into student(id, firstname, lastname, email_address) values (3, 'Sanjay ', 'Ganesh', 'Sanjay@gmail.com');
